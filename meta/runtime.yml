@@ -1,2 +1,6 @@
 ---
 requires_ansible: '>=2.16.0'  # Use '>=2.9.10' instead, if needed
+plugin_routing:
+  terminal:
+    lancom.swoslx.swoslx:
+      redirect: lancom.swoslx.swoslx
