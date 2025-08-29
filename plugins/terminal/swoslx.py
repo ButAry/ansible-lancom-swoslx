@@ -83,7 +83,7 @@ class TerminalModule(TerminalBase):
 
         cmd = {"command": "enable"}
         if passwd:
-            cmd["prompt"] = r"[\r\n]?[Pp]assword: $"
+            cmd["prompt"] = "[\r\n]?[Pp]assword: $"
             cmd["answer"] = to_text(passwd, errors="surrogate_or_strict")
             cmd["prompt_retry_check"] = "True"
 
