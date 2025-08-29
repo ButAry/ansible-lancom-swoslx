@@ -74,7 +74,25 @@ class Cliconf(CliconfBase):
     def get_config(self, source="running", flags=None, format=None):
         """
         Retrieve the current device configuration.
-        Only 'running' is supported.
+          source: only 'running' configuration supported.
+          flags: list of config parameter/key names to include.
+                 Example-1:
+                 ```
+                     filter: automatic-firmware-update
+                     output: automatic-firmware-update Mode check-and-update
+                             automatic-firmware-update Version-Policy security-updates-only
+                             automatic-firmware-update Check-Interval daily
+                             automatic-firmware-update Base-Url update.lancom-systems.de
+                             automatic-firmware-update Check-Time-Begin 0
+                             automatic-firmware-update Check-Time-End 0
+                             automatic-firmware-update Install-Time-Begin 2
+                             automatic-firmware-update Install-Time-End 4
+                 ```
+                Example-2:
+                 ```
+                    filter: Check-Interval
+                    output: automatic-firmware-update Check-Interval daily
+                ```
         """
         if source != "running":
             raise ValueError(f"Fetching configuration from '{source}' is not supported - only 'running'")
