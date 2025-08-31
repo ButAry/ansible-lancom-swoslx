@@ -40,7 +40,7 @@ class TerminalModule(TerminalBase):
     def __init__(self, *args, **kwargs):
         super(TerminalModule, self).__init__(*args, **kwargs)
 
-    terminal_config_prompt = re.compile(br"^.+\(config(-.*)?\)#$")
+    terminal_config_prompt_re = re.compile(br"^.+\(config(-.*)?\)#$")
 
     terminal_stdout_re = [
         re.compile(br"[\r\n]?[\w+\-.:/\[\]]+(?:\([^)]+\)){0,3}[>#] ?$"),
@@ -109,7 +109,7 @@ class TerminalModule(TerminalBase):
             return # if prompt is undefined or not in privileged mode, do nothing
 
         try:
-            if self.terminal_config_prompt.match(prompt):
+            if self.terminal_config_prompt_re.match(prompt):
                 self._exec_cli_command(b"exit")
 
             self._exec_cli_command(b"disable")

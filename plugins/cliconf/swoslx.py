@@ -135,48 +135,36 @@ class Cliconf(CliconfBase):
 
     def set_cli_prompt_context(self):
         """
-        Ensure the command prompt on device is in the correct mode
+        Ensure the command prompt on device is in configuration mode
         :return: None
         """
-        out = self._connection.get_prompt()
-
-        if out is None:
-            raise AnsibleConnectionFailure(
-                message="cli prompt is not identified from the last received response window: %s" % 
-                       self._connection._last_recv_window
-            )
-
-        while True:
-            out = to_text(out, errors="surrogate_then_replace").strip()
-            if self.terminal_config_prompt.match(out):
-                break
-            else:
-                if out and not self.terminal_config_prompt.match(out):
-                    self._connection.queue_message("vvvv", "wrong context, sending 'configure' to device")
-                    self.send_command("configure")
-                else:
-                    break
+        matched_prompt = self._handle_prompt_context()
+        
+        if not matched_prompt:
+            self._connection.queue_message("vvvv", "wrong context, sending 'configure' to device")
+            self.send_command("configure")
 
     def update_cli_prompt_context(self):
         """
-        Update the cli prompt context to ensure it is in operational mode
+        Ensure the device is in operational mode
         :return: None
         """
-        out = self._connection.get_prompt()
+        matched_prompt = self._handle_prompt_context()
+        
+        if matched_prompt:
+            self._connection.queue_message("vvvv", "wrong context, sending 'exit' to device")
+            self.send_command("exit")
 
-        if out is None:
+    def _handle_prompt_context(self):
+        """Helper to handle prompt context validation"""
+        prompt = self._connection.get_prompt()
+        if prompt is None:
             raise AnsibleConnectionFailure(
-                message="cli prompt is not identified from the last received response window: %s" % 
-                       self._connection._last_recv_window
+                message="cli prompt is not identified from the last received response window: %s" %
+                        self._connection._last_recv_window
             )
 
-        while True:
-            out = to_text(out, errors="surrogate_then_replace").strip()
-            if self.terminal_config_prompt.match(out):
-                break
-            else:
-                if out and self.terminal_config_prompt.match(out):
-                    self._connection.queue_message("vvvv", "wrong context, sending exit to device")
-                    self.send_command("exit")
-                else:
-                    break
+        # Convert and strip prompt for comparison
+        prompt_text = to_text(prompt, errors="surrogate_then_replace").strip()
+
+        return self.terminal_config_prompt.match(prompt_text)
