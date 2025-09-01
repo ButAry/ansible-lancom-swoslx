@@ -18,6 +18,10 @@ class TestCliconf:
         connection.get_prompt.return_value = ENABLED_OUTPUT
 
         plugin = Cliconf(connection=connection)
+        plugin.set_cli_prompt_context = MagicMock()
+        plugin.update_cli_prompt_context = MagicMock()
+        plugin.run_commands = MagicMock(return_value="Commands applied")
+
         return plugin
 
     def test_get_device_info_successful(self, cliconf, system_output, version_output):
@@ -123,7 +127,6 @@ class TestCliconf:
 
         assert "Configuration output 'format' is not supported" in str(exc.value)
 
-    """
     def test_edit_config_successful(self, cliconf):
         cliconf._connection._get_prompt.side_effect = [CONFIGURED_OUTPUT, ENABLED_OUTPUT]
 
@@ -142,6 +145,7 @@ class TestCliconf:
         cliconf.run_commands.assert_not_called()
         assert result == ""
 
+    """
     def test_edit_config_failure(self, cliconf, running_config):
         candidate = "logging on"
         cliconf.run_commands = MagicMock(side_effect=Exception("Command failed"))
@@ -166,5 +170,4 @@ class TestCliconf:
         with pytest.raises(AnsibleConnectionFailure) as exc:
             cliconf.edit_config(candidate=candidate)
         assert "Failed to update prompt context" in str(exc.value)
-"""
-
+    """
