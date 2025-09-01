@@ -1,6 +1,6 @@
 import pytest
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 from ansible.errors import AnsibleConnectionFailure
 from ansible.module_utils._text import to_text
 from ansible_collections.lancom.swoslx.plugins.cliconf.swoslx import Cliconf
@@ -16,7 +16,7 @@ class TestCliconf:
         connection.get_prompt.return_value = ENABLED_OUTPUT
 
         plugin = Cliconf(connection=connection)
-        plugin.set_cli_prompt_context = MagicMock()
+#        plugin.set_cli_prompt_context = MagicMock()
         plugin.update_cli_prompt_context = MagicMock()
         plugin.run_commands = MagicMock()
 
@@ -126,6 +126,7 @@ class TestCliconf:
         assert "Configuration output 'format' is not supported" in str(exc.value)
 
     def test_edit_config_successful(self, cliconf):
+        cliconf.set_cli_prompt_context = MagicMock()
         cliconf.run_commands = MagicMock(return_value="Commands applied")
         cliconf._connection._get_prompt.side_effect = [CONFIGURED_OUTPUT, ENABLED_OUTPUT]
 
@@ -139,6 +140,7 @@ class TestCliconf:
         assert result == "Commands applied"
 
     def test_edit_config_empty_candidate(self, cliconf):
+        cliconf.set_cli_prompt_context = MagicMock()
         result = cliconf.edit_config(candidate=[])
         cliconf.set_cli_prompt_context.assert_not_called()
         cliconf.run_commands.assert_not_called()
@@ -168,3 +170,29 @@ class TestCliconf:
         with pytest.raises(AnsibleConnectionFailure) as exc:
             cliconf.edit_config(candidate=candidate)
         assert "Failed to update prompt context" in str(exc.value)
+
+    def test_set_cli_prompt_context_already_in_config_mode(self, cliconf):
+        cliconf._handle_prompt_context = MagicMock(return_value=True)
+        cliconf.send_command = MagicMock()
+
+        cliconf.set_cli_prompt_context()
+
+        cliconf.send_command.assert_not_called()
+
+    def test_set_cli_prompt_context_not_in_config_mode(self, cliconf):
+        cliconf._handle_prompt_context = MagicMock(return_value=False)
+        cliconf.send_command = MagicMock()
+
+        cliconf.set_cli_prompt_context()
+
+        cliconf.send_command.assert_called_once_with("configure")
+
+    def test_set_cli_prompt_context_handle_prompt_failure(self, cliconf):
+        cliconf._handle_prompt_context = MagicMock(
+            side_effect=AnsibleConnectionFailure("Failed to determine prompt context")
+        )
+
+        with pytest.raises(AnsibleConnectionFailure) as exc:
+            cliconf.set_cli_prompt_context()
+
+        assert "Failed to determine prompt context" in str(exc.value)
