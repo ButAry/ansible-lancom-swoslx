@@ -1,10 +1,8 @@
 import pytest
-import json
-import re
 
 from unittest.mock import MagicMock, call
 from ansible.errors import AnsibleConnectionFailure
-from ansible.module_utils._text import to_bytes, to_text
+from ansible.module_utils._text import to_text
 from ansible_collections.lancom.swoslx.plugins.cliconf.swoslx import Cliconf
 from .fixtures import system_output, version_output, running_config
 
@@ -20,7 +18,7 @@ class TestCliconf:
         plugin = Cliconf(connection=connection)
         plugin.set_cli_prompt_context = MagicMock()
         plugin.update_cli_prompt_context = MagicMock()
-        plugin.run_commands = MagicMock(return_value="Commands applied")
+        plugin.run_commands = MagicMock()
 
         return plugin
 
@@ -128,6 +126,7 @@ class TestCliconf:
         assert "Configuration output 'format' is not supported" in str(exc.value)
 
     def test_edit_config_successful(self, cliconf):
+        cliconf.run_commands = MagicMock(return_value="Commands applied")
         cliconf._connection._get_prompt.side_effect = [CONFIGURED_OUTPUT, ENABLED_OUTPUT]
 
         candidate = "logging on"
@@ -145,7 +144,6 @@ class TestCliconf:
         cliconf.run_commands.assert_not_called()
         assert result == ""
 
-    """
     def test_edit_config_failure(self, cliconf, running_config):
         candidate = "logging on"
         cliconf.run_commands = MagicMock(side_effect=Exception("Command failed"))
@@ -170,4 +168,3 @@ class TestCliconf:
         with pytest.raises(AnsibleConnectionFailure) as exc:
             cliconf.edit_config(candidate=candidate)
         assert "Failed to update prompt context" in str(exc.value)
-    """
