@@ -104,7 +104,7 @@ class Cliconf(CliconfBase):
         cmd = "show running-config all-defaults"
 
         if flags:
-            cmd += " | include"
+            cmd += " | include "
             cmd += " ".join(to_list(flags))
             cmd = cmd.strip()
 

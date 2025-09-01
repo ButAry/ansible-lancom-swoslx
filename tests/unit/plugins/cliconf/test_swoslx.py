@@ -14,7 +14,10 @@ CONFIGURED_OUTPUT = b"GS-3510XP(config)#"
 class TestCliconf:
     @pytest.fixture
     def cliconf(self):
-        plugin = Cliconf(connection=MagicMock())
+        connection = MagicMock()
+        connection.get_prompt.return_value = ENABLED_OUTPUT
+
+        plugin = Cliconf(connection=connection)
         return plugin
 
     def test_get_device_info_successful(self, cliconf, system_output, version_output):
@@ -25,7 +28,13 @@ class TestCliconf:
             system_lines,   # First call for 'show system'
             version_lines   # Second call for 'show version'
         ])
+
         result = cliconf.get_device_info()
+
+        cliconf.get.assert_has_calls([
+            call('show system'),
+            call('show version')
+        ])
 
         assert "network_os" in result and result["network_os"] == "lancom.swoslx"
         assert "network_os_model" in result and result["network_os_model"] == "LANCOM GS-3510XP"
@@ -57,15 +66,19 @@ class TestCliconf:
             minimal_system_output,
             minimal_version_output
         ])
+
         result = cliconf.get_device_info()
+
+        cliconf.get.assert_has_calls([
+            call('show system'),
+            call('show version')
+        ])
 
         assert "network_os_model" not in result
         assert "description" not in result
         assert "manufactured_date" not in result
 
-
     def test_get_device_info_failure(self, cliconf):
-        cliconf._connection._get_prompt.return_value = ENABLED_OUTPUT
         cliconf.get = MagicMock(side_effect=Exception("Connection failed"))
 
         with pytest.raises(AnsibleConnectionFailure) as exc:
@@ -74,50 +87,54 @@ class TestCliconf:
         assert "Failed to retrieve device info: Connection failed" in str(exc.value)
 
     def test_get_config_successful(self, cliconf, running_config):
-        # Mock the prompt to show we're in privileged mode
-        cliconf._connection.get_prompt.return_value = b"GS-3510XP#"
-        
         cliconf.get = MagicMock(return_value=running_config)
         result = cliconf.get_config(source="running")
+        cliconf.get.assert_has_calls([
+            call('show running-config all-defaults')
+        ])
 
         assert to_text(result) == to_text(running_config)
-"""
+
     def test_get_config_with_flags(self, cliconf, running_config):
-        cliconf._connection._get_prompt.return_value = ENABLED_OUTPUT
-        cliconf.get = MagicMock(return_value=running_config)
-        result = cliconf.get_config(source="running", flags=["automatic-firmware-update"])
+        running_config_flagged = b"""
+            automatic-firmware-update Check-Time-Begin 0
+            automatic-firmware-update Check-Time-End 0
+            """
+
+        cliconf.get = MagicMock(return_value=running_config_flagged)
+        result = cliconf.get_config(source="running", flags=["automatic-firmware-update", "Check-Time"])
         result = to_text(result)
 
-        assert "automatic-firmware-update" in result
-        assert "Check-Interval daily" in result
-        assert "Base-Url update.lancom-systems.de" in result
+        cliconf.get.assert_has_calls([
+            call('show running-config all-defaults | include automatic-firmware-update Check-Time')
+        ])
+
+        assert to_text(result) == to_text(running_config_flagged)
 
     def test_get_config_invalid_source(self, cliconf):
         with pytest.raises(ValueError) as exc:
             cliconf.get_config(source="startup")
+
         assert "Fetching configuration from 'startup' is not supported - only 'running'" in str(exc.value)
 
     def test_get_config_with_format(self, cliconf):
         with pytest.raises(ValueError) as exc:
             cliconf.get_config(source="running", format="json")
+
         assert "Configuration output 'format' is not supported" in str(exc.value)
 
+    """
     def test_edit_config_successful(self, cliconf):
         cliconf._connection._get_prompt.side_effect = [CONFIGURED_OUTPUT, ENABLED_OUTPUT]
 
-        # Prepare candidate command
         candidate = "logging on"
-        # Call edit_config
         result = cliconf.edit_config(candidate=candidate)
-        # Assert that set_cli_prompt_context was called once
-        cliconf.set_cli_prompt_context.assert_called_once()
-        # Assert that run_commands was called with the candidate
-        cliconf.run_commands.assert_called_once_with(candidate)
-        # Assert that update_cli_prompt_context was called once
-        cliconf.update_cli_prompt_context.assert_called_once()
-        # Check the result
-        assert result == "Commands applied"
 
+        cliconf.set_cli_prompt_context.assert_called_once()
+        cliconf.run_commands.assert_called_once_with(candidate)
+        cliconf.update_cli_prompt_context.assert_called_once()
+
+        assert result == "Commands applied"
 
     def test_edit_config_empty_candidate(self, cliconf):
         result = cliconf.edit_config(candidate=[])
@@ -150,3 +167,4 @@ class TestCliconf:
             cliconf.edit_config(candidate=candidate)
         assert "Failed to update prompt context" in str(exc.value)
 """
+
