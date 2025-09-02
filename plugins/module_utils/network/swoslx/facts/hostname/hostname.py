@@ -49,7 +49,7 @@ class HostnameFacts(object):
         objs = []
 
         if not data:
-            data = connection.get()
+            data = connection.get("show running-config all-defaults | include hostname")
 
         # parse native config using the Hostname template
         hostname_parser = HostnameTemplate(lines=data.splitlines(), module=self._module)

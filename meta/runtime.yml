@@ -7,3 +7,7 @@ plugin_routing:
   terminal:
     lancom.swoslx.swoslx:
       redirect: lancom.swoslx.swoslx
+  modules:
+    hostname:
+      redirect: lancom.swoslx.swoslx_hostname
+
