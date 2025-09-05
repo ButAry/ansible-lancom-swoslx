@@ -1,3 +1,34 @@
+# Copyright 2025 Red Hat
+# GNU General Public License v3.0+
+# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
+
+DOCUMENTATION = """
+author: Heiko Tropartz (@ButAry)
+name: swoslx
+short_description: Use swoslx cliconf to run command on LANCOM Systems SWOSLX platform
+description:
+- This swoslx plugin provides low level abstraction apis for sending and receiving CLI
+  commands from LANCOM Systems SWOSLX network devices.
+version_added: 0.0.1
+options:
+  config_commands:
+    description:
+    - Specifies a list of commands that can make configuration changes
+      to the target device.
+    - When `ansible_network_single_user_mode` is enabled, if a command sent
+      to the device is present in this list, the existing cache is invalidated.
+    version_added: 0.1.0
+    type: list
+    elements: str
+    default: []
+    vars:
+    - name: ansible_swoslx_config_commands
+"""
+
 import re
 import json
 

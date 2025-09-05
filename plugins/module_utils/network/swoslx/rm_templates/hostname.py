@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2025 Red Hat
 # GNU General Public License v3.0+
 # (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -27,11 +26,7 @@ class HostnameTemplate(NetworkTemplate):
     PARSERS = [
         {
             "name": "hostname",
-            "getval": re.compile(
-                r"""
-                ^\s*hostname\s+(?P<hostname>\S+)\s*
-                $""", re.VERBOSE,
-            ),
+            "getval": re.compile(r"^\s*hostname\s+(?P<hostname>\S+)\s*$", re.VERBOSE),
             "setval": "hostname {{ hostname }}",
             "result": {
                 "hostname": "{{ hostname }}",

@@ -1,9 +1,6 @@
-#
-# -*- coding: utf-8 -*-
 # Copyright 2025 Red Hat
 # GNU General Public License v3.0+
 # (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-#
 
 from __future__ import absolute_import, division, print_function
 
@@ -17,9 +14,6 @@ necessary to bring the current configuration to its desired end-state is
 created.
 """
 
-from copy import deepcopy
-
-from ansible.module_utils.six import iteritems
 from ansible_collections.ansible.netcommon.plugins.module_utils.network.common.utils import (
     dict_merge,
 )
@@ -48,6 +42,7 @@ class Hostname(ResourceModule):
             tmplt=HostnameTemplate(),
         )
         self.parsers = [
+            "hostname"
         ]
 
     def execute_module(self):
@@ -65,8 +60,10 @@ class Hostname(ResourceModule):
         """ Generate configuration commands to send based on
             want, have and desired state.
         """
-        wantd = {entry['name']: entry for entry in self.want}
-        haved = {entry['name']: entry for entry in self.have}
+        #wantd = {entry['hostname']: entry for entry in self.want}
+        wantd = self.want
+        #haved = {entry['hostname']: entry for entry in self.have}
+        haved = self.have
 
         # if state is merged, merge want onto have and then compare
         if self.state == "merged":
@@ -74,19 +71,9 @@ class Hostname(ResourceModule):
 
         # if state is deleted, empty out wantd and set haved to wantd
         if self.state == "deleted":
-            haved = {
-                k: v for k, v in iteritems(haved) if k in wantd or not wantd
-            }
             wantd = {}
 
-        # remove superfluous config for overridden and deleted
-        if self.state in ["overridden", "deleted"]:
-            for k, have in iteritems(haved):
-                if k not in wantd:
-                    self._compare(want={}, have=have)
-
-        for k, want in iteritems(wantd):
-            self._compare(want=want, have=haved.pop(k, {}))
+        self._compare(want=wantd, have=haved)
 
     def _compare(self, want, have):
         """Leverages the base class `compare()` method and
