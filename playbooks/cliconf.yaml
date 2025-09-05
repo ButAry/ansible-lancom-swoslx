@@ -1,0 +1,53 @@
+---
+- name: Test SWOSLX Cliconf Plugin
+  hosts: swoslx
+  gather_facts: no
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: lancom.swoslx.swoslx
+    ansible_become: yes
+    ansible_become_method: enable
+    ansible_become_password: "{{ become_password }}"
+    test_hostname: "ansible-test-host"
+    ansible_terminal_stderr_logfile: /tmp/ansible_swoslx_cliconf.log
+  
+  tasks:
+    - name: Test device info collection
+      ansible.builtin.raw: "show system"
+      register: system_info
+      failed_when: system_info.rc not in [0, 1]
+      args:
+        provider: "{{ cli }}"
+
+    - name: Test running config retrieval
+      ansible.builtin.raw: "show running-config"
+      register: running_config
+      failed_when: running_config.rc != 0
+      args:
+        provider: "{{ cli }}"
+
+    - name: Test configuration change (hostname)
+      lancom.swoslx.swoslx_hostname:
+        config:
+          hostname: "{{ test_hostname }}"
+      register: config_change
+      failed_when: config_change.changed is not defined
+
+    - name: Test configuration rollback
+      lancom.swoslx.swoslx_hostname:
+        config:
+          hostname: "{{ test_hostname }}_original"
+      register: config_rollback
+      failed_when: config_rollback.changed is not defined
+
+    - name: Test invalid configuration
+      lancom.swoslx.swoslx_hostname:
+        config:
+          hostname: "{{ test_hostname }}-invalid!@#"
+      register: invalid_config
+      failed_when: invalid_config is not failed
+
+    - name: Verify configuration persistence
+      lancom.swoslx.swoslx_facts:
+      register: post_facts
+      failed_when: post_facts.ansible_facts.hostname != "{{ test_hostname }}_original"

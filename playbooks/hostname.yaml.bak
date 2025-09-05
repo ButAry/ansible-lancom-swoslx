@@ -1,0 +1,58 @@
+---
+- name: Test SWOSLX Hostname Module
+  hosts: swoslx
+  gather_facts: no
+  vars:
+    ansible_connection: network_cli
+    ansible_network_os: swoslx
+    ansible_become: yes
+    ansible_become_method: enable
+    test_hostname: "ansible-test-host"
+    original_hostname: "{{ hostvars[item]['ansible_facts']['hostname'] }}"
+    inventory_hostname: "{{ inventory_hostname }}"
+
+  tasks:
+    - name: Gather pre-change facts
+      swoslx_facts:
+      register: pre_facts
+      failed_when: pre_facts.ansible_facts.hostname is not defined
+
+    - name: Set new hostname
+      swoslx_hostname:
+        config:
+          hostname: "{{ test_hostname }}"
+      register: set_result
+      failed_when:
+        - set_result.changed is not defined
+        - set_result.msg is defined and set_result.msg != ''
+
+    - name: Verify hostname change
+      swoslx_facts:
+      register: post_facts
+      failed_when:
+        - post_facts.ansible_facts.hostname != test_hostname
+        - post_facts.ansible_facts.hostname == original_hostname
+
+    - name: Test idempotency (no change expected)
+      swoslx_hostname:
+        config:
+          hostname: "{{ test_hostname }}"
+      register: idem_result
+      failed_when:
+        - idem_result.changed is not true
+        - idem_result.msg is defined and idem_result.msg != ''
+
+    - name: Revert to original hostname
+      swoslx_hostname:
+        config:
+          hostname: "{{ original_hostname }}"
+      register: revert_result
+      failed_when:
+        - revert_result.changed is not defined
+        - revert_result.msg is defined and revert_result.msg != ''
+
+    - name: Validate final state
+      assert:
+        that:
+          - "hostvars[inventory_hostname]['ansible_facts']['hostname'] == original_hostname"
+        fail_msg: "Hostname not reverted to original value"

@@ -1,0 +1,24 @@
+---
+- name: Test SWOSLX Hostname Module
+  hosts: swoslx
+  gather_facts: no
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: lancom.swoslx.swoslx
+
+  tasks:
+    - name: Set new hostname
+      lancom.swoslx.swoslx_hostname:
+        config:
+          hostname: "myDeviceName"
+      register: set_result
+    - name: Display version output
+      ansible.builtin.debug:
+        var: set_result
+    - name: Delete hostname
+      lancom.swoslx.swoslx_hostname:
+        state: deleted
+      register: set_result
+    - name: Display version output
+      ansible.builtin.debug:
+        var: set_result

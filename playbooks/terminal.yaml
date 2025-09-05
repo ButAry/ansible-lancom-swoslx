@@ -1,0 +1,17 @@
+---
+- name: Test SWOSLX Terminal Plugin
+  hosts: swoslx
+  gather_facts: no
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: lancom.swoslx.swoslx
+    ansible_terminal_stderr_logfile: /tmp/ansible_swoslx_terminal.log
+
+  tasks:
+    - name: Test basic command execution
+      cli_command:
+        command: show version
+      register: version_output
+    - name: Display version output
+      ansible.builtin.debug:
+        var: version_output

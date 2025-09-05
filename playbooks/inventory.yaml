@@ -1,0 +1,9 @@
+gs3510xp ansible_host=192.168.178.50
+
+[swoslx]
+gs3510xp
+
+[swoslx:vars]
+ansible_ssh_user=admin
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+ansible_network_import_modules=True

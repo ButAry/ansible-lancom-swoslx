@@ -1,0 +1,46 @@
+---
+- name: Test SWOSLX Terminal Plugin
+  hosts: swoslx
+  gather_facts: no
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_network_os: lancom.swoslx.swoslx
+    ansible_terminal_stderr_logfile: /tmp/ansible_swoslx_terminal.log
+
+  tasks:
+    - name: Test basic command execution
+      cli_command:
+        command: show version
+      register: version_output
+
+    - name: Test prompt detection
+      cli_command:
+        command: "echo {{ ansible_prompt }}"
+      register: prompt_output
+      failed_when: prompt_output != 0
+      when: "'#>' not in prompt_output.stdout"
+
+    - name: Test privilege escalation (become)
+      cli_command:
+        command: show running-config
+      register: config_output
+      failed_when: config_output != 0
+      vars:
+        ansible_become: yes
+        ansible_become_password: "{{ become_password }}"
+
+    - name: Test multi-line command
+      cli_command:
+        command: |                                                                                                                                                 
+          configure terminal                                                                                                                                       
+          hostname TestHost                                                                                                                                        
+          exit
+      register: config_change
+      failed_when: config_change != 0
+
+    - name: Test command output parsing
+      assert:
+        that:
+          - "'Version' in config_change.stdout"
+          - "config_change.stdout_lines | length > 5"
+        fail_msg: "Output parsing failed for configuration commands"
